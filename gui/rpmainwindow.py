@@ -37,8 +37,10 @@ class RoboPathMainWindow():
         
         self.geditorframe = ttk.LabelFrame(self.mainframe, text='Selected Robot: none', padding='5 5 5 5')
         self.geditorframe.grid(row=1, column=0, rowspan=2, sticky=(E, W), padx=5)
+        
         self.robopathwidget = RoboPathWidget(self.geditorframe, GRAPH_EDITOR_WIDTH, GRAPH_EDITOR_HEIGHT)
         self.robopathwidget.grid(row=0, column=0, sticky=(E, W, N, S), padx=5, pady=5)
+
         self.build_points_frame()
         self.build_obstacles_frame()  
         
@@ -56,7 +58,7 @@ class RoboPathMainWindow():
 
         #self.cbo_robot = ttk.Combobox(self.robotframe, state='readonly', values=list(rs))
         self.cbo_robot = ttk.Combobox(self.robotframe, state='readonly', postcommand=self.on_populate_robot_list)
-        self.cbo_robot.grid(row=0, column=0, columnspan=2)
+        self.cbo_robot.grid(row=0, column=0, columnspan=4, sticky=(E, W, N), padx=5, pady=5)
         #self.cbo_robot.current(1)
         self.cbo_robot.bind("<<ComboboxSelected>>", self.on_robot_selection_change)
         
@@ -74,6 +76,9 @@ class RoboPathMainWindow():
         self.btn_run_robot = ttk.Button(self.robotframe, text="Run", command=self.on_run_robot_click)
         self.btn_run_robot.grid(row=1, column=3, sticky=(N, W, E), padx=5, pady=5)
         self.btn_run_robot.state(["disabled"]) 
+        
+        self.lbl_robot_info = Label(self.robotframe, text='Type: <none>\nArm Length: <none>\nUnreachable Zone: <none>\nAction Angle: <none>', anchor=W, relief=SUNKEN, justify=LEFT)
+        self.lbl_robot_info.grid(row=0, column=4, rowspan=2, sticky=(W, E, N, S), padx=5, pady=5)
     
     def on_populate_robot_list(self):
         self.robots = RobotController().get_robots(self.session)
@@ -153,6 +158,7 @@ class RoboPathMainWindow():
     
     def refresh_children(self):
         r = self.robot
+        self.lbl_robot_info['text'] = 'Type: %s\nArm Length: %d\nUnreachable Zone: %d\nAction Angle: %d' % (r.robot_type, r.arm_length, r.unreachable_zone_radius, r.action_angle)
         self.geditorframe['text'] = 'Robot: %s %s' % (r.name, r.robot_type)
         self.btn_edit_robot.state(["!disabled"])
         self.btn_del_robot.state(["!disabled"])
@@ -201,8 +207,11 @@ class RoboPathMainWindow():
      
     def on_edit_point_click(self):
         pp = [pp for pp in self.robot.passing_points if pp.name == self.selected_point][0] 
-        ppd = PassingPointDialog(self.root, title='Edit Passing Point:{}'.format(pp.name), passing_point=pp)
+        ppd = PassingPointDialog(self.root, title='Edit Passing Point', passing_point=pp)
         if ppd.closing_status == Dialog.OK:
+            p = self.robopathwidget.working_area.robot2tkinter_coordinates([pp.x1, pp.y1])
+            pp.x = p[0]
+            pp.y = p[1]
             self.session.commit()
             self.refresh_points()
     
@@ -235,8 +244,13 @@ class RoboPathMainWindow():
         
     def on_edit_obstacle_click(self):
         o = [o for o in self.robot.obstacles if o.name == self.selected_obstacle][0]
-        od = ObstacleDialog(self.root, title='Edit Obstacle:{}'.format(o.name), obstacle=o)
+        od = ObstacleDialog(self.root, title='Edit Obstacle', obstacle=o)
         if od.closing_status == Dialog.OK:
+            p = self.robopathwidget.working_area.robot2tkinter_coordinates([o.x1, o.y1])
+            o.x = p[0]
+            o.y = p[1]
+            o.width = self.robopathwidget.working_area.robot2tkinter_scale(o.width1)
+            o.height = self.robopathwidget.working_area.robot2tkinter_scale(o.height1)
             self.session.commit()
             self.refresh_obstacles()
             
@@ -261,16 +275,12 @@ class RoboPathMainWindow():
     def on_passing_point_add(self, passing_point):
         self.lb_points.insert(END, passing_point.name)
         passing_point.robot_id = self.robot.id
-        #pp = PassingPoint(name=passing_point.name, x=passing_point.x, y=passing_point.y, point_id=passing_point.point_id, robot_id=self.robot.id, z=0)
         self.session.add(passing_point)
         self.session.commit()
         
     def on_obstacle_add(self, obstacle):
         self.lb_obstacles.insert(END, obstacle.name)
         obstacle.robot_id = self.robot.id
-#         o = Obstacle(name=obstacle.name, x=obstacle.rect[0], y=obstacle.rect[1], \
-#                      width=obstacle.rect[2] - obstacle.rect[0], height=obstacle.rect[3] - obstacle.rect[1], \
-#                      obstacle_id=obstacle.obstacle_id, robot_id=self.robot.id, z=0)
         self.session.add(obstacle)
         self.session.commit()
 

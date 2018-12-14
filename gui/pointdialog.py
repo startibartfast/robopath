@@ -17,16 +17,19 @@ class PassingPointDialog(Dialog):
         Dialog.__init__(self, parent, title)
         
     def body(self, master):
-        Label(master, text="X:").grid(row=0)
-        Label(master, text="Y:").grid(row=1)
+        Label(master, text="Name:").grid(row=0)
+        Label(master, text=self.passing_point.name, anchor=W, relief=SUNKEN).grid(row=0, column=1, sticky=(E, W))
+
+        Label(master, text="X:").grid(row=1)
+        Label(master, text="Y:").grid(row=2)
 
         self.txt_x = Entry(master)
-        self.txt_x.insert(0, self.passing_point.x)
-        self.txt_x.grid(row=0, column=1)
+        self.txt_x.insert(0, self.passing_point.x1)
+        self.txt_x.grid(row=1, column=1)
         
         self.txt_y = Entry(master)
-        self.txt_y.insert(0, self.passing_point.y)
-        self.txt_y.grid(row=1, column=1)
+        self.txt_y.insert(0, self.passing_point.y1)
+        self.txt_y.grid(row=2, column=1)
         
         return self.txt_x # initial focus
 
@@ -51,8 +54,8 @@ class PassingPointDialog(Dialog):
     def apply(self):
         try:
             #self.robot.name = self.txt_name.get()
-            self.passing_point.x = int(self.txt_x.get())
-            self.passing_point.y = int(self.txt_y.get())
+            self.passing_point.x1 = int(self.txt_x.get())
+            self.passing_point.y1 = int(self.txt_y.get())
         except ValueError as ve:
             messagebox.showerror("Error", "Invalid number.\nDescription:%s" % (ve))
             #print("Oops!  That was no valid number.  Try again...")        

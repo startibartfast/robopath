@@ -22,36 +22,40 @@ ROUND_ANGLE = 360
 X_COORD_IDX = 0
 Y_COORD_IDX = 1
 SECTOR_CENTER_ANGLE = 180
-OBSTACLE_DEF_WIDTH = 50
-OBSTACLE_DEF_HEIGHT = 30
+OBSTACLE_DEF_WIDTH = 150
+OBSTACLE_DEF_HEIGHT = 150
 
 class RoboPathWidget(Canvas):
     def __init__(self, container, width, height):
         super(RoboPathWidget, self).__init__(container, width=width, height=height)
-        self.working_area_radius = min(width, height) / 2.
-        self.center = (width/2., height/2.)
-
+        #self.working_area_radius = min(width, height) / 2.
+        #self.center = (width/2., height/2.)
+        self.width = width
+        self.height = height
+        
         self.passing_points = []
         self.obstacles = []
         self.working_area_id = None
         self.unreachable_area_id = None
+        self.container = container
         
         # Observer pattern
         self.point_subject = Subject()
         self.obstacle_subject = Subject()
         
-    #def build(self, arm_length, unreachable_area_radius, action_angle, passing_points):
     def build(self, robot):
+        self.working_area = RoboPathWorkingArea(self.width, self.height, robot)
         self.clear()
 
-        self.scale = self.working_area_radius / robot.arm_length #MAX_ARM_LENGTH
+        #self.scale = self.working_area_radius / robot.arm_length
+        
         # Compute normalized radiuses of the outer and inner circles
-        self.arm_length = robot.arm_length * self.scale #self.working_area_radius * arm_length / MAX_ARM_LENGTH
-        self.unreachable_area_radius = robot.unreachable_zone_radius * self.scale
+        self.arm_length = self.working_area.robot2tkinter_scale(robot.arm_length) #robot.arm_length * self.scale
+        self.unreachable_area_radius = self.working_area.robot2tkinter_scale(robot.unreachable_zone_radius) #robot.unreachable_zone_radius * self.scale
         self.unreachable_sector_angle = ROUND_ANGLE - robot.action_angle
         
-        x = self.center[X_COORD_IDX]
-        y = self.center[Y_COORD_IDX]
+        x = self.working_area.center[X_COORD_IDX]
+        y = self.working_area.center[Y_COORD_IDX]
         
         # Draw outer circle
         self.boundary_rect = x - self.arm_length, \
@@ -79,11 +83,26 @@ class RoboPathWidget(Canvas):
                 rpo = RoboPathObstacle(o, self)
                 self.obstacles.append(rpo)          
 
+        self.lbl_mouse_position = Label(self.container, text="<X:-, Y:->")
+        self.lbl_mouse_position.grid(row=1, sticky=(E, W, N), padx=5, pady=5)
+
         # Create context menu
         self.popup_menu = Menu(self, tearoff=0)
         self.popup_menu.add_command(label="Add point", command=self.on_add_point_click)
         self.popup_menu.add_command(label="Add obstacle", command=self.on_add_obstacle_click)
         self.bind("<Button-3>", self.popup) # Button-2 on Aqua
+
+        # Detect mouse position event
+        self.bind('<Motion>', self.on_mouse_move)
+    
+    def on_mouse_move(self, event):
+        #x, y = event.x - self.winfo_width() / 2, event.y - self.winfo_height() / 2
+        #p1 = self.tkinter2robot_coordinates([x, y])
+        #p2 = self.robot2tkinter_coordinates(p1)
+        p1 = self.working_area.tkinter2robot_coordinates([event.x, event.y])
+        p2 = self.working_area.robot2tkinter_coordinates(p1)
+        #self.lbl_mouse_position['text'] = '(X:{}, Y:{}) -> (X1:{}, Y1:{}) -> (X2:{}, Y2:{})'.format(event.x, event.y, int(p1[X_COORD_IDX]), int(p1[Y_COORD_IDX]), int(p2[X_COORD_IDX]), int(p2[Y_COORD_IDX]))
+        self.lbl_mouse_position['text'] = '(X:{}, Y:{})'.format(int(p1[Y_COORD_IDX]), int(p2[X_COORD_IDX]))
         
     def popup(self, event):
         try:
@@ -103,7 +122,8 @@ class RoboPathWidget(Canvas):
         if self.is_within_bounds(self.popup_event):
             pid = self.get_new_point_id()
             s = 'P{}'.format(pid)
-            pp = PassingPoint(name=s, x=self.popup_event.x, y=self.popup_event.y, z=0, point_id=pid)
+            p1 = self.working_area.tkinter2robot_coordinates([self.popup_event.x, self.popup_event.y])
+            pp = PassingPoint(name=s, x=self.popup_event.x, y=self.popup_event.y, x1=p1[X_COORD_IDX], y1=p1[Y_COORD_IDX], z=0, point_id=pid)
             rppp = RoboPathPassingPoint(pp, self)
             self.passing_points.append(rppp)          
      
@@ -118,11 +138,17 @@ class RoboPathWidget(Canvas):
             y = self.popup_event.y
             oid = self.get_new_obstacle_id()
             s = 'O{}'.format(oid)
-            o = Obstacle(name=s, x=x, y=y, z=0, width=OBSTACLE_DEF_WIDTH, height=OBSTACLE_DEF_HEIGHT, obstacle_id=oid)
+            p1 = self.working_area.tkinter2robot_coordinates([x, y])
+            o = Obstacle(name=s, x1=p1[X_COORD_IDX], y1=p1[Y_COORD_IDX], z=0, width1=OBSTACLE_DEF_WIDTH, height1=OBSTACLE_DEF_HEIGHT, obstacle_id=oid)
     
             od = ObstacleDialog(self.winfo_toplevel(), title='Edit Obstacle:{}'.format(s), obstacle=o)
             if od.closing_status == Dialog.OK:
                 #print(o)
+                p = self.working_area.robot2tkinter_coordinates([o.x1, o.y1])
+                o.x = p[0]
+                o.y = p[1]
+                o.width = self.working_area.robot2tkinter_scale(o.width1)
+                o.height = self.working_area.robot2tkinter_scale(o.height1)
                 rpo = RoboPathObstacle(o, self)
                 self.obstacles.append(rpo)          
                 # Notify observers
@@ -159,10 +185,10 @@ class RoboPathWidget(Canvas):
 
     def is_within_bounds(self, event):
         # Check if point is inside the working area
-        x = event.x - self.center[X_COORD_IDX]
-        y = event.y - self.center[Y_COORD_IDX]
+        x = event.x - self.working_area.center[X_COORD_IDX]
+        y = event.y - self.working_area.center[Y_COORD_IDX]
         #print('x:{},y:{}'.format(x, y))
-        if not (x**2 + y**2 <= self.working_area_radius**2):
+        if not (x**2 + y**2 <= self.working_area.working_area_radius**2):
             print ('Touch down event out of bounds')
             return False
           
@@ -224,17 +250,48 @@ class RoboPathWidget(Canvas):
             if o != obstacle_name:
                 os.append(o)
         self.obstacles = os
+        
+class RoboPathWorkingArea():
+    def __init__(self, width, height, robot):
+        self.robot = robot
+        self.width = width
+        self.height = height
+        self.working_area_radius = min(width, height) / 2.
+        self.center = (width/2., height/2.)
+        self.scale = self.working_area_radius / robot.arm_length
 
+    def tkinter2robot_coordinates(self, p):
+        x, y = p[X_COORD_IDX] - self.width / 2., p[Y_COORD_IDX] - self.height / 2.
+        p1 = self.rotate_point([x, y])
+        return [self.tkinter2robot_scale(x) for x in p1]
+    
+    def robot2tkinter_coordinates(self, p):
+        p1 = self.rotate_point(p)
+        p2 = [self.robot2tkinter_scale(x) for x in p1]
+        
+        x = p2[X_COORD_IDX] + self.width / 2.
+        y = p2[Y_COORD_IDX] + self.height / 2.
+        return [x, y] 
+
+    def rotate_point(self, p):
+        # Apply symmetrical rotation around X-axis
+        x = p[X_COORD_IDX]
+        y = p[Y_COORD_IDX]
+        x1 = x
+        y1 = -y
+        return [x1, y1]
+    
+    def robot2tkinter_scale(self, v):
+        return v * self.scale
+
+    def tkinter2robot_scale(self, v):
+        return v / self.scale
+    
 class RoboPathPassingPoint():
     _RADIUS = 5.
     _TEXT_OFFSET = 10
     def __init__(self, passing_point, canvas):
         self.passing_point = passing_point
-#    def __init__(self, pid, x, y, canvas):
-#         self.name = 'P{}'.format(pid)
-#         self.x = x
-#         self.y = y
-#         self.point_id = pid
         self.text_object_id = canvas.create_text(self.passing_point.x + RoboPathPassingPoint._TEXT_OFFSET, self.passing_point.y + RoboPathPassingPoint._TEXT_OFFSET, text=self.passing_point.name)
         rect = self.passing_point.x - RoboPathPassingPoint._RADIUS, self.passing_point.y - RoboPathPassingPoint._RADIUS, self.passing_point.x + RoboPathPassingPoint._RADIUS, self.passing_point.y + RoboPathPassingPoint._RADIUS
         self.circle_object_id = canvas.create_oval(rect, fill="red")
