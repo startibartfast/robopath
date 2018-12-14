@@ -24,6 +24,7 @@ Y_COORD_IDX = 1
 SECTOR_CENTER_ANGLE = 180
 OBSTACLE_DEF_WIDTH = 150
 OBSTACLE_DEF_HEIGHT = 150
+WN_BACKGROUND_COLOR = '#d9d9d9'
 
 class RoboPathWidget(Canvas):
     def __init__(self, container, width, height):
@@ -70,7 +71,7 @@ class RoboPathWidget(Canvas):
             y - self.unreachable_area_radius, \
             x + self.unreachable_area_radius, \
             y + self.unreachable_area_radius
-        self.unreachable_area_id = self.create_arc(rect, start=(self.unreachable_sector_angle/2) - SECTOR_CENTER_ANGLE, extent=ROUND_ANGLE-self.unreachable_sector_angle, fill="black")
+        self.unreachable_area_id = self.create_arc(rect, start=(self.unreachable_sector_angle/2) - SECTOR_CENTER_ANGLE, outline='', extent=ROUND_ANGLE-self.unreachable_sector_angle, fill=WN_BACKGROUND_COLOR)
         self.bind('<Button-1>', self.on_click)
 
         if not (robot.passing_points is None):         
@@ -94,7 +95,8 @@ class RoboPathWidget(Canvas):
 
         # Detect mouse position event
         self.bind('<Motion>', self.on_mouse_move)
-    
+        print(self.config('background'))
+        
     def on_mouse_move(self, event):
         #x, y = event.x - self.winfo_width() / 2, event.y - self.winfo_height() / 2
         #p1 = self.tkinter2robot_coordinates([x, y])
