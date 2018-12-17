@@ -14,6 +14,9 @@ from patterns.observer import Observer #, Subject
 
 from model.datamodel import PassingPoint, Obstacle
 from controller.robot import RobotController
+from tkinter import filedialog
+
+import os
  
 GRAPH_EDITOR_WIDTH = 500
 GRAPH_EDITOR_HEIGHT = 500
@@ -73,7 +76,7 @@ class RoboPathMainWindow():
         self.btn_del_robot.grid(row=1, column=2, sticky=(N, W, E), padx=5, pady=5)
         self.btn_del_robot.state(["disabled"]) 
 
-        self.btn_run_robot = ttk.Button(self.robotframe, text="Run", command=self.on_run_robot_click)
+        self.btn_run_robot = ttk.Button(self.robotframe, text="Export", command=self.on_run_robot_click)
         self.btn_run_robot.grid(row=1, column=3, sticky=(N, W, E), padx=5, pady=5)
         self.btn_run_robot.state(["disabled"]) 
         
@@ -112,7 +115,12 @@ class RoboPathMainWindow():
             self.cbo_robot.set('')
                         
     def on_run_robot_click(self):
-        pass
+        cwd = os.getcwd()
+        export_filename =  filedialog.asksaveasfilename(initialdir = cwd, title = "Select file", filetypes = (("text files","*.txt"), ("all files","*.*")))
+        if len(export_filename) > 0:
+            #print("Exporting file:{}".format(export_filename))
+            rc = RobotController()
+            rc.export_robot_file(self.robot, export_filename)
 
     def build_points_frame(self):
         self.pointsframe = ttk.LabelFrame(self.mainframe, text='Passing Points', padding='5 5 5 5')

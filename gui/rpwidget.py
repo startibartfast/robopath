@@ -95,7 +95,7 @@ class RoboPathWidget(Canvas):
 
         # Detect mouse position event
         self.bind('<Motion>', self.on_mouse_move)
-        print(self.config('background'))
+        #print(self.config('background'))
         
     def on_mouse_move(self, event):
         #x, y = event.x - self.winfo_width() / 2, event.y - self.winfo_height() / 2
@@ -104,7 +104,7 @@ class RoboPathWidget(Canvas):
         p1 = self.working_area.tkinter2robot_coordinates([event.x, event.y])
         p2 = self.working_area.robot2tkinter_coordinates(p1)
         #self.lbl_mouse_position['text'] = '(X:{}, Y:{}) -> (X1:{}, Y1:{}) -> (X2:{}, Y2:{})'.format(event.x, event.y, int(p1[X_COORD_IDX]), int(p1[Y_COORD_IDX]), int(p2[X_COORD_IDX]), int(p2[Y_COORD_IDX]))
-        self.lbl_mouse_position['text'] = '(X:{}, Y:{})'.format(int(p1[Y_COORD_IDX]), int(p2[X_COORD_IDX]))
+        self.lbl_mouse_position['text'] = '(X:{}, Y:{})'.format(int(p1[X_COORD_IDX]), int(p1[Y_COORD_IDX]))
         
     def popup(self, event):
         try:
