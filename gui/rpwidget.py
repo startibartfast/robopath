@@ -96,6 +96,11 @@ class RoboPathWidget(Canvas):
         # Detect mouse position event
         self.bind('<Motion>', self.on_mouse_move)
         #print(self.config('background'))
+
+        self.path = RoboPathPath(robot, self)
+
+    def draw_path(self, path):
+        self.path.draw(path)
         
     def on_mouse_move(self, event):
         #x, y = event.x - self.winfo_width() / 2, event.y - self.winfo_height() / 2
@@ -288,7 +293,46 @@ class RoboPathWorkingArea():
 
     def tkinter2robot_scale(self, v):
         return v / self.scale
+
+class RoboPathPath():
+    def __init__(self, robot, canvas):
+        self.robot = robot
+        self.path = []
+        self.lines = []
+        self.canvas = canvas
+        
+    def find_point(self, index):
+        return next((x for x in self.robot.passing_points if x.point_id == index), None)
     
+    def draw(self, path):
+        self.clear()
+        self.path = list(map(lambda p: int(p[1:]), path.split(",")))
+        pps = []
+        for p in self.path:
+            pp = self.find_point(p)
+            if pp is None:
+                raise Exception('Invalid point index in list!')
+            pps.append(pp)
+            
+        self.draw_segments(pps)    
+    
+    def draw_segments(self, pps):
+        p1 = None
+        p2 = None
+        for i in range(len(pps) - 1):
+            p1 = [pps[i].x, pps[i].y]
+            p2 = [pps[i + 1].x, pps[i + 1].y]
+            line_id = self.canvas.create_line(p1, p2, fill="black")
+            self.lines.append(line_id)
+    
+    def clear(self):
+        if len(self.lines) == 0:
+            return
+        for lid in self.lines:
+            self.canvas.delete(lid)
+        
+        self.lines.clear()
+        
 class RoboPathPassingPoint():
     _RADIUS = 5.
     _TEXT_OFFSET = 10

@@ -48,7 +48,9 @@ class Robot(Base):
     
     def __repr__(self):
         return "<Robot(name='%s', type=%s)>" % (self.name, self.robot_type)        
-    
+
+#
+# Coordinates x,y,z are related to the graphical library's coordinate systems while x1,y1,z1 are related to robot's system     
 class PassingPoint(Base):
     __tablename__ = 'passing_point'
     id = Column(Integer(), primary_key=True)

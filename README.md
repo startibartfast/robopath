@@ -3,7 +3,7 @@
 0) Install Mysql Community Edition (https://dev.mysql.com/downloads/mysql/)
     - When asked select the simpler authentication method
     - Provide password for the default 'root' user as 'admin'. Both user name and password are hard-wired in the code (see module datamodel.py) ** IMPORTANT for safety reasons this should be used only on local machines not accessible by Internet **
-    - When the installation is completed, create a database and call it 'robopath' (you can do it directly through the MySQL Command Line Client)
+    - When the installation is completed, create the robopath database (you can do it directly through the MySQL Command Line Client by running: 'create database robopath;')
     
 1) Download and install last stable python version (v.3.7.1). After the installation open a shell and run 'python -V' if everything is fine it should show python's version.
 

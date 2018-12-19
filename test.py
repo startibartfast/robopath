@@ -4,38 +4,22 @@ Created on Dec 7, 2018
 @author: carlo
 '''
 
-import tkinter # Tkinter -> tkinter in Python 3
+import csv
 
-class FancyListbox(tkinter.Listbox):
-
-    def __init__(self, parent, *args, **kwargs):
-        tkinter.Listbox.__init__(self, parent, *args, **kwargs)
-
-        self.popup_menu = tkinter.Menu(self, tearoff=0)
-        self.popup_menu.add_command(label="Delete",
-                                    command=self.delete_selected)
-        self.popup_menu.add_command(label="Select All",
-                                    command=self.select_all)
-
-        self.bind("<Button-3>", self.popup) # Button-2 on Aqua
-
-    def popup(self, event):
-        try:
-            self.popup_menu.tk_popup(event.x_root, event.y_root, 0)
-        finally:
-            self.popup_menu.grab_release()
-
-    def delete_selected(self):
-        for i in self.curselection()[::-1]:
-            self.delete(i)
-
-    def select_all(self):
-        self.selection_set(0, 'end')
-
-
-root = tkinter.Tk()
-flb = FancyListbox(root, selectmode='multiple')
-for n in range(10):
-    flb.insert('end', n)
-flb.pack()
-root.mainloop()
+with open('/home/carlo/Downloads/Out_csv.csv') as csv_file:
+    csv_reader = csv.reader(csv_file, delimiter=',')
+    line_count = 0
+    
+    for row in csv_reader:
+        s = row[0]
+        #rs = map(lambda r: r.name, self.robots)
+        ps = map(lambda p: int(p[1:]), s.split(","))
+        print(list(ps))
+#         if line_count == 0:
+#             print(f'Column names are {", ".join(row)}')
+#             line_count += 1
+#         else:
+        #print(f'\t{row[0]} works in the {row[1]} department, and was born in {row[2]}.')
+        #line_count += 1
+        #print(row[0])
+    #print(f'Processed {line_count} lines.')

@@ -17,6 +17,7 @@ from controller.robot import RobotController
 from tkinter import filedialog
 
 import os
+import csv
  
 GRAPH_EDITOR_WIDTH = 500
 GRAPH_EDITOR_HEIGHT = 500
@@ -39,13 +40,14 @@ class RoboPathMainWindow():
         self.build_robot_frame()
         
         self.geditorframe = ttk.LabelFrame(self.mainframe, text='Selected Robot: none', padding='5 5 5 5')
-        self.geditorframe.grid(row=1, column=0, rowspan=2, sticky=(E, W), padx=5)
+        self.geditorframe.grid(row=1, column=0, rowspan=3, sticky=(N, S, E, W), padx=5)
         
         self.robopathwidget = RoboPathWidget(self.geditorframe, GRAPH_EDITOR_WIDTH, GRAPH_EDITOR_HEIGHT)
         self.robopathwidget.grid(row=0, column=0, sticky=(E, W, N, S), padx=5, pady=5)
 
         self.build_points_frame()
         self.build_obstacles_frame()  
+        self.build_paths_frame()
         
         # Observer setting for passing-point editor
         self.point_observer = RoboPathPassingPointObserver(self, RoboPathMainWindow.on_passing_point_add)
@@ -76,7 +78,7 @@ class RoboPathMainWindow():
         self.btn_del_robot.grid(row=1, column=2, sticky=(N, W, E), padx=5, pady=5)
         self.btn_del_robot.state(["disabled"]) 
 
-        self.btn_run_robot = ttk.Button(self.robotframe, text="Export", command=self.on_run_robot_click)
+        self.btn_run_robot = ttk.Button(self.robotframe, text="Export", command=self.on_export_robot_click)
         self.btn_run_robot.grid(row=1, column=3, sticky=(N, W, E), padx=5, pady=5)
         self.btn_run_robot.state(["disabled"]) 
         
@@ -114,7 +116,7 @@ class RoboPathMainWindow():
             self.robot = None
             self.cbo_robot.set('')
                         
-    def on_run_robot_click(self):
+    def on_export_robot_click(self):
         cwd = os.getcwd()
         export_filename =  filedialog.asksaveasfilename(initialdir = cwd, title = "Select file", filetypes = (("text files","*.txt"), ("all files","*.*")))
         if len(export_filename) > 0:
@@ -160,6 +162,26 @@ class RoboPathMainWindow():
         self.btn_clear_obstacles = ttk.Button(self.obstaclesframe, text="Clear", command=self.on_clear_obstacles_click)
         self.btn_clear_obstacles.grid(row=1, column=2, sticky=(N, W, E), padx=5, pady=5)
     
+    def build_paths_frame(self):
+        self.pathsframe = ttk.LabelFrame(self.mainframe, text='Paths', padding='5 5 5 5')
+        self.pathsframe.grid(row=3, column=1, sticky=(W, E, S, N), padx=5)
+        
+        self.lb_paths = Listbox(self.pathsframe, width=20, height=10)
+        self.lb_paths.grid(row=0,column=0, columnspan=3, sticky=(E, W, N, S), padx=5)
+        self.lb_paths.bind('<<ListboxSelect>>', self.on_list_paths_change)
+
+        self.btn_open_path = ttk.Button(self.pathsframe, text="Open", command=self.on_open_path_click)
+        self.btn_open_path.grid(row=1, column=0, sticky=(N, W, E), padx=5, pady=5)
+        self.btn_open_path.state(["disabled"]) 
+        
+        self.btn_show_path = ttk.Button(self.pathsframe, text="Show", command=self.on_show_path_click)
+        self.btn_show_path.grid(row=1, column=1, sticky=(N, W, E), padx=5, pady=5)
+        self.btn_show_path.state(["disabled"]) 
+
+        self.btn_clear_path = ttk.Button(self.pathsframe, text="Clear", command=self.on_clear_path_click)
+        self.btn_clear_path.grid(row=1, column=2, sticky=(N, W, E), padx=5, pady=5)
+        self.btn_clear_path.state(["disabled"]) 
+
     def on_robot_selection_change(self, event):
         self.robot = self.robots[self.cbo_robot.current()]
         self.refresh_children()
@@ -171,10 +193,12 @@ class RoboPathMainWindow():
         self.btn_edit_robot.state(["!disabled"])
         self.btn_del_robot.state(["!disabled"])
         self.btn_run_robot.state(["!disabled"])
-        
+        self.btn_open_path.state(["!disabled"]) 
+
         self.refresh_points()
         self.refresh_obstacles()
-
+        self.clear_paths()
+        
     def refresh_points(self):
         self.robopathwidget.clear_points() 
         self.lb_points.delete(0, END) # clear
@@ -195,6 +219,12 @@ class RoboPathMainWindow():
             self.lb_obstacles.insert(END, *os)
             self.robopathwidget.build(r)
                     
+    def clear_paths(self):
+        self.robopathwidget.path.clear() 
+        self.lb_paths.delete(0, END) # clear
+        self.btn_show_path.state(["disabled"]) 
+        self.btn_clear_path.state(["disabled"]) 
+
     def clear_children(self):
         self.geditorframe['text'] = 'Robot: none selected'
         self.btn_edit_robot.state(["!disabled"])
@@ -291,6 +321,41 @@ class RoboPathMainWindow():
         obstacle.robot_id = self.robot.id
         self.session.add(obstacle)
         self.session.commit()
+
+    def on_list_paths_change(self, event):
+        w = event.widget
+        if len(w.curselection()) == 0:
+            return
+        index = int(w.curselection()[0])
+        self.selected_path = w.get(index)
+        self.btn_show_path.state(["!disabled"]) 
+        self.btn_clear_path.state(["!disabled"]) 
+        
+    def on_open_path_click(self):
+        cwd = os.getcwd()
+        #export_filename =  filedialog.asksaveasfilename(initialdir = cwd, title = "Select file", filetypes = (("text files","*.txt"), ("all files","*.*")))
+        filename =  filedialog.askopenfilename(initialdir = cwd, title = "Select file", filetypes = (("CSV files","*.csv"),("all files","*.*")))
+        if len(filename) > 0:
+            with open(filename) as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=',')
+                self.populate_path_list(csv_reader)
+                #print("Exporting file:{}".format(filename))
+    
+    def on_show_path_click(self):
+        try:
+            self.robopathwidget.draw_path(self.selected_path)
+        except Exception as e:
+            messagebox.showerror("Error", "%s\nCheck if the output file corresponds to the robot." % (e))
+            
+    def on_clear_path_click(self):
+#         if messagebox.askyesno("Clear", "All obstacles will be deleted. Are you sure?", icon=messagebox.WARNING):
+#             self.clear_obstacles()
+        pass
+
+    def populate_path_list(self, csv_reader):
+        self.lb_paths.delete(0, END) # clear
+        self.paths = list(map(lambda r: r[0], csv_reader))
+        self.lb_paths.insert(END, *self.paths)
 
 class RoboPathPassingPointObserver(Observer):
     def __init__(self, obj, callback):
