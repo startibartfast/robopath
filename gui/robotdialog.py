@@ -14,7 +14,7 @@ class RobotDialog(Dialog):
     def __init__(self, parent, title = None, **kwargs):
         if kwargs.get('robot') is None:
             self.is_new = True
-            self.robot = Robot(name="Puppo", robot_type="XYZ", arm_length=4500, unreachable_zone_radius=450, action_angle=290)
+            self.robot = Robot(name="", robot_type="", arm_length=4500, unreachable_zone_radius=450, action_angle=290)
         else:
             self.is_new = False
             self.robot = kwargs.get('robot')
