@@ -188,7 +188,7 @@ class RoboPathMainWindow():
     
     def refresh_children(self):
         r = self.robot
-        self.lbl_robot_info['text'] = 'Type: %s\nArm Length: %d\nUnreachable Zone: %d\nAction Angle: %d' % (r.robot_type, r.arm_length, r.unreachable_zone_radius, r.action_angle)
+        self.lbl_robot_info['text'] = 'Id: %d\nType: %s\nArm Length: %d\nUnreachable Zone: %d\nAction Angle: %d' % (r.id, r.robot_type, r.arm_length, r.unreachable_zone_radius, r.action_angle)
         self.geditorframe['text'] = 'Robot: %s %s' % (r.name, r.robot_type)
         self.btn_edit_robot.state(["!disabled"])
         self.btn_del_robot.state(["!disabled"])

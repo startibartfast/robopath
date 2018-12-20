@@ -13,12 +13,15 @@ VAR robtarget p20 := [ [400, 0, 0], [0.0, -0.707106,   0.707106,  0.0] ,[ 0, 0, 
 VAR robtarget p30 := [ [200, 200, 0], [0.0, -0.707106,   0.707106,  0.0] ,[ 0, 0, 0, 0 ], [ 0, 0, 0, 9E9, 9E9, 9E9]];
 
 VAR robobstacle o1 := [[x,y,z], [width, height, depth]]
+
+VAR robot r :=[<id>,<name>,<type>]
 '''
 
 from model.datamodel import Robot
 
 class RobotController():
     ROUND_ANGLE = 360
+    ROBOT_TEMPLATE_LINE = "VAR robot r := [%d, %s, %s]\n"
     POINT_TEMPLATE_LINE = "VAR robtarget p%d := [ [%d, %d, 0], [0.0, -0.707106,   0.707106,  0.0] ,[ 0, 0, 0, 0 ], [ 0, 0, 0, 9E9, 9E9, 9E9]];\n"
     OBSTACLE_TEMPLATE_LINE = "VAR robobstacle o%d := [ [%d, %d, 0], [%d, %d, 0]];\n"
 
@@ -36,3 +39,6 @@ class RobotController():
             # Obstacle
             for o in robot.obstacles:
                 f.write(self.OBSTACLE_TEMPLATE_LINE % (o.obstacle_id, o.x1, o.y1, o.width1, o.height1))
+
+            # Robot's data            
+            f.write(self.ROBOT_TEMPLATE_LINE % (robot.id, robot.name, robot.robot_type))
